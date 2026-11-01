@@ -13,10 +13,20 @@ jobs:
         with:
           gradle-version: current
       - name: Unpack
-        run: unzip -q DeathClientDLC_glow.zip
+        run: |
+          ls -la
+          zip_file="$(ls *glow*.zip | head -1)"
+          echo "Using: $zip_file"
+          unzip -oq "$zip_file"
+          ls DeathClientDLC
       - name: Build
         working-directory: DeathClientDLC
-        run: gradle build
+        run: |
+          set +e
+          gradle build --console=plain 2>&1 | tee ../build.log
+          code=${PIPESTATUS[0]}
+          { echo '### Errors'; echo '```'; grep -E "error:" -A1 ../build.log | head -60; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $code
       - uses: actions/upload-artifact@v4
         with:
           name: DeathClientDLC
